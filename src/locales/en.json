@@ -1,0 +1,15 @@
+{
+  "aboutMsg": "This is an about page!",
+  "colorsOfTheme": "Colors of theme",
+  "backToHome": "Back to start page",
+  "examples": "Examples",
+  "about": "About",
+  "account": "Account",
+  "header": "Series Template",
+  "noUser": "is not logged in",
+  "startPage": "Start page",
+  "gridDemo": "Grid demo",
+  "gridSeries": "Grid series",
+  "links": "Links",
+  "actualBreakpoint": "Actual breakpoint"
+}
