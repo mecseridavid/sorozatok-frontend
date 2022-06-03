@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import { quasar, transformAssetUrls } from "@quasar/vite-plugin";
 import vue from "@vitejs/plugin-vue";
 import vueI18n from "@intlify/vite-plugin-vue-i18n";
+import customHmr from "./src/middlewares/customHmr";
 
 export default defineConfig({
   plugins: [
@@ -15,6 +16,7 @@ export default defineConfig({
       // you need to set i18n resource including paths !
       include: resolve(__dirname, "src/locales/**"),
     }),
+    customHmr("ts"),
   ],
   resolve: {
     alias: {

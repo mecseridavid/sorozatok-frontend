@@ -1,10 +1,7 @@
-import $axios from "./axios.instance";
+import { $axios } from "./axios.instance";
 import { defineStore } from "pinia";
-import {
-  Notify,
-  Loading,
-  // Cookies,
-} from "quasar";
+import { Notify, Loading } from "quasar";
+import { AxiosError } from "axios";
 
 Notify.setDefaults({
   position: "bottom",
@@ -37,44 +34,52 @@ export const useUsersStore = defineStore({
   },
   actions: {
     async loginUser(usernameOrEmail: string, password: string): Promise<void> {
-      Loading.show();
-      $axios
-        .post("auth/login", {
+      try {
+        Loading.show();
+        const res = await $axios.post("auth/login", {
           usernameOrEmail: usernameOrEmail,
           password: password,
-        })
-        .then(async (res) => {
+        });
+        if (res && res.data) {
           this.loggedUser = res.data;
           Loading.hide();
           Notify.create({
             message: `${res.data.name} is logged in`,
             color: "positive",
           });
-          // console.log(await Cookies.get("Authorization"));
-        })
-        .catch(() => {
-          this.loggedUser = null;
-          Loading.hide();
-          Notify.create({ message: "Error on Authentication", color: "negative" });
-        });
+        }
+      } catch (error) {
+        let errorMessage = "Error on Authentication!";
+        if (error instanceof AxiosError) {
+          errorMessage = error.message;
+        }
+        this.loggedUser = null;
+        Loading.hide();
+        Notify.create({ message: errorMessage, color: "negative" });
+      }
     },
     async logOut(): Promise<void> {
-      Loading.show();
-      $axios
-        .post("auth/logout")
-        .then(() => {
+      try {
+        Loading.show();
+        const res = await $axios.post("auth/logout");
+        Loading.hide();
+        if (res) {
           this.loggedUser = null;
           Loading.hide();
           Notify.create({
             message: "Successful logout",
             color: "positive",
           });
-        })
-        .catch(() => {
-          this.loggedUser = null;
-          Loading.hide();
-          Notify.create({ message: "Error on log out", color: "negative" });
-        });
+        }
+      } catch (error) {
+        let errorMessage = "Error on log out!";
+        if (error instanceof AxiosError) {
+          errorMessage = error.message;
+        }
+        this.loggedUser = null;
+        Loading.hide();
+        Notify.create({ message: errorMessage, color: "negative" });
+      }
     },
   },
 });

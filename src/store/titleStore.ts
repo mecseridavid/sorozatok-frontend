@@ -1,4 +1,5 @@
-import $axios from "./axios.instance";
+import { $axios } from "./axios.instance";
+import { AxiosError } from "axios";
 import { defineStore } from "pinia";
 import { Notify, Loading } from "quasar";
 import { IEpisode } from "./episodeStore";
@@ -10,10 +11,14 @@ Notify.setDefaults({
   actions: [{ icon: "close", color: "white" }],
 });
 
-export interface ITitle {
+interface IObjectKeys {
+  [key: string]: number | string | null | IEpisode[] | undefined;
+}
+
+export interface ITitle extends IObjectKeys {
   _id?: number;
   title?: string;
-  img?: string;
+  img?: string | null;
   episodes?: IEpisode[];
 }
 
@@ -41,6 +46,26 @@ function ShowErrorWithNotify(error: any): void {
   Notify.create({ message: msg, color: "negative" });
 }
 
+function getDifferences(newTitle: ITitle, oldTitle: ITitle): ITitle | undefined {
+  const diff: ITitle = {};
+  Object.keys(newTitle).forEach((k: string, i) => {
+    if (k === "episodes") {
+      return;
+    }
+    const newValue = Object.values(newTitle)[i];
+    const oldValue = Object.values(oldTitle)[i];
+    if (newValue != oldValue) diff[k as keyof ITitle] = newValue;
+  });
+  if (Object.keys(diff).length == 0) {
+    Notify.create({
+      message: "Nothing changed!",
+      color: "negative",
+    });
+    return;
+  }
+  return diff;
+}
+
 export const useTitleStore = defineStore({
   id: "titles",
   state: (): IState => ({
@@ -56,109 +81,124 @@ export const useTitleStore = defineStore({
   },
   actions: {
     async getAll(): Promise<void> {
-      Loading.show();
-      this.titles = [];
-      $axios
-        .get("titles")
-        .then((res) => {
-          Loading.hide();
-          if (res && res.data) {
-            this.titles = res.data;
-            this.numberOfTitles = res.data.length;
-          }
-        })
-        .catch((error) => {
-          ShowErrorWithNotify(error);
-        });
+      try {
+        Loading.show();
+        this.titles = [];
+        const res = await $axios.get("titles");
+        Loading.hide();
+        if (res && res.data) {
+          this.titles = res.data;
+          this.numberOfTitles = res.data.length;
+        }
+      } catch (error) {
+        let errorMessage = "Failed to get titles!";
+        if (error instanceof AxiosError) {
+          errorMessage = error.message;
+        }
+        Loading.hide();
+        ShowErrorWithNotify(errorMessage);
+      }
     },
     async getById(id: number): Promise<void> {
-      Loading.show();
-      $axios
-        .get(`title/${id}`)
-        .then((res) => {
-          Loading.hide();
-          if (res && res.data) {
-            this.title = res.data;
-            Object.assign(this.titleOld, this.title);
-          }
-        })
-        .catch((error) => {
-          ShowErrorWithNotify(error);
-        });
+      try {
+        Loading.show();
+        const res = await $axios.get(`title/${id}`);
+        Loading.hide();
+        if (res && res.data) {
+          this.title = res.data;
+          Object.assign(this.titleOld, this.title);
+        }
+      } catch (error) {
+        let errorMessage = "Failed to get title!";
+        if (error instanceof AxiosError) {
+          errorMessage = error.message;
+        }
+        Loading.hide();
+        ShowErrorWithNotify(errorMessage);
+      }
     },
     async editById(): Promise<void> {
-      if (this.title && this.title._id) {
-        const diff: any = {};
-        Object.keys(this.title).forEach((k, i) => {
-          const newValue = Object.values(this.title)[i];
-          const oldValue = Object.values(this.titleOld)[i];
-          if (newValue != oldValue) diff[k] = newValue;
-        });
-        if (Object.keys(diff).length == 0) {
-          Notify.create({
-            message: "Nothing changed!",
-            color: "negative",
-          });
-          process.exit(0);
+      try {
+        if (this.title && this.title._id) {
+          Loading.show();
+          const diff = getDifferences(this.title, this.titleOld);
+          const res = await $axios.patch(`title/${this.title._id}`, diff);
+          Loading.hide();
+          if (res && res.data) {
+            Notify.create({
+              message: `Title with id=${res.data._id} has been edited successfully!`,
+              color: "positive",
+            });
+          }
         }
-        // console.log(diff, this.title);
-        Loading.show();
-        $axios
-          .patch(`title/${this.title._id}`, diff)
-          .then((res) => {
-            Loading.hide();
-            if (res && res.data) {
-              this.title = {};
-              this.getAll();
-              Notify.create({
-                message: `Title with id=${res.data._id} has been edited successfully!`,
-                color: "positive",
-              });
-            }
-          })
-          .catch((error) => {
-            ShowErrorWithNotify(error);
-          });
+      } catch (error) {
+        let errorMessage = "Failed to edit title!";
+        if (error instanceof AxiosError) {
+          errorMessage = error.message;
+        }
+        Loading.hide();
+        ShowErrorWithNotify(errorMessage);
       }
-      // console.log("title: ", this.title, "oldTitle", this.titleOld);
     },
     async fetchPaginatedTitles(params: IPaginatedParams): Promise<void> {
-      Loading.show();
-      // console.log(
-      //   `title/${params.offset}/${params.limit}/${params.order}/${params.sort}/${params.keyword}`
-      // );
-      $axios
-        .get(
+      try {
+        Loading.show();
+        const res = await $axios.get(
           `title/${params.offset}/${params.limit}/${params.order}/${params.sort}/${params.keyword}`
-        )
-        .then((res) => {
-          if (res && res.data) {
-            this.titles = res.data.titles;
-            this.numberOfTitles = res.data.count;
-          }
+        );
+        if (res && res.data) {
           Loading.hide();
-        })
-        .catch((error) => {
-          console.error("hiba: " + error);
+          this.titles = res.data.titles;
+          this.numberOfTitles = res.data.count;
+        }
+      } catch (error) {
+        let errorMessage = "Failed to get titles with pagination!";
+        if (error instanceof AxiosError) {
+          errorMessage = error.message;
+        }
+        Loading.hide();
+        ShowErrorWithNotify(errorMessage);
+      }
+    },
+    async create(): Promise<void> {
+      try {
+        if (this.title) {
+          Loading.show();
+          this.title.episodes = [];
+          const res = await $axios.post("title", this.title);
           Loading.hide();
           Notify.create({
-            message: `Error in paginated fetch posts: ${error.message}`,
-            color: "negative",
+            message: `New document with id=${res.data._id} has been saved successfully!`,
+            color: "positive",
           });
-        });
-      // console.log(this.titles);
+        }
+      } catch (error) {
+        let errorMessage = "Failed to create title!";
+        if (error instanceof AxiosError) {
+          errorMessage = error.message;
+        }
+        Loading.hide();
+        ShowErrorWithNotify(errorMessage);
+      }
     },
     async deleteById(id: number): Promise<void> {
-      Loading.show();
-      const response = await $axios.delete(`title/${id}`);
-      if (response.status == 200) {
-        console.log("success");
-        Notify.create({
-          message: `Title with id=${id} has been deleted successfully!`,
-          color: "positive",
-        });
-      } else {
-        ShowErrorWithNotify(response.statusText);
+      try {
+        Loading.show();
+        const response = await $axios.delete(`title/${id}`);
+        if (response.status == 200) {
+          Loading.hide();
+          Notify.create({
+            message: `Title with id=${id} has been deleted successfully!`,
+            color: "positive",
+          });
+        }
+      } catch (error) {
+        let errorMessage = "Failed to delete title!";
+        if (error instanceof AxiosError) {
+          errorMessage = error.message;
+        }
+        Loading.hide();
+        ShowErrorWithNotify(errorMessage);
       }
     },
   },

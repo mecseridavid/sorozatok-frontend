@@ -1,6 +1,7 @@
-import $axios from "./axios.instance";
+import { $axios } from "./axios.instance";
 import { defineStore } from "pinia";
 import { Notify, Loading } from "quasar";
+import { AxiosError } from "axios";
 
 Notify.setDefaults({
   position: "bottom",
@@ -9,12 +10,18 @@ Notify.setDefaults({
   actions: [{ icon: "close", color: "white" }],
 });
 
-export interface IEpisode {
+interface IObjectKeys {
+  [key: string]: string | Record<string, string | number> | number | boolean | null | undefined;
+}
+
+export interface IEpisode extends IObjectKeys {
   _id?: number;
-  title?: {
-    _id?: number;
-    title?: string;
-  };
+  title?:
+    | {
+        _id?: number;
+        title?: string;
+      }
+    | number;
   date?: string | null;
   season?: number;
   episode?: number;
@@ -41,6 +48,35 @@ function ShowErrorWithNotify(error: any): void {
   Notify.create({ message: msg, color: "negative" });
 }
 
+function getDifferences(newEpisode: IEpisode, oldEpisode: IEpisode): IEpisode | undefined {
+  const diff: IEpisode = {}; //{ [key: string]: any }
+  Object.keys(newEpisode).forEach((k: string, i) => {
+    if (k == "date") {
+      const temp = Object.values(newEpisode)[i] as string;
+      if (temp != (Object.values(oldEpisode)[i] as string)) {
+        if (temp === "") {
+          diff[k as keyof IEpisode] = newEpisode.date = null;
+        } else {
+          diff[k as keyof IEpisode] = newEpisode.date = temp.split("-").join(".");
+        }
+      }
+      return;
+    }
+    const newValue = Object.values(newEpisode)[i];
+    const oldValue = Object.values(oldEpisode)[i];
+    if (newValue != oldValue) diff[k as keyof IEpisode] = newValue;
+  });
+  if (Object.keys(diff).length == 0) {
+    Notify.create({
+      message: "Nothing changed!",
+      color: "negative",
+    });
+    // process.exit(0);
+    return;
+  }
+  return diff;
+}
+
 export const useEpisodeStore = defineStore({
   id: "episodes",
   state: (): IState => ({
@@ -58,148 +94,131 @@ export const useEpisodeStore = defineStore({
   },
   actions: {
     async getAll(): Promise<void> {
-      Loading.show();
-      this.episodes = [];
-      $axios
-        .get("episodes")
-        .then((res) => {
-          if (res && res.data) {
-            this.episodes = res.data;
-          }
-          Loading.hide();
-        })
-        .catch((error) => {
-          ShowErrorWithNotify(error);
-        });
+      try {
+        Loading.show();
+        this.episodes = [];
+        const res = await $axios.get("episodes");
+        Loading.hide();
+        if (res && res.data) {
+          this.episodes = res.data;
+        }
+      } catch (error) {
+        let errorMessage = "Failed to get episodes!";
+        if (error instanceof AxiosError) {
+          errorMessage = error.message;
+        }
+        Loading.hide();
+        ShowErrorWithNotify(errorMessage);
+      }
     },
-    // async getById(id: number): Promise<IEpisode> {
-    //   Loading.show();
-    //   $axios
-    //     .get(`episode/${id}`)
-    //     .then((res) => {
-    //       Loading.hide();
-    //       if (res && res.data) {
-    //         this.episode = res.data;
-    //         Object.assign(this.episodeOld, this.episode);
-    //       }
-    //     })
-    //     .catch((error) => {
-    //       ShowErrorWithNotify(error);
-    //     });
-    //   console.log("episode after res:", this.episode);
-    //   return this.episode;
-    // },
     async getById(id: number): Promise<void> {
-      // console.log(id);
-      Loading.show();
-      $axios
-        .get(`episode/${id}`)
-        .then((res) => {
-          // console.log(res);
-          Loading.hide();
-          if (res && res.data) {
-            this.episode = {
-              ...res.data,
-              date: res.data.date != null ? res.data.date.split(".").join("-") : null,
-            };
-            Object.assign(this.episodeOld, this.episode);
-          }
-          // console.log("episode after res:", this.episode);
-        })
-        .catch((error) => {
-          ShowErrorWithNotify(error);
-        });
+      try {
+        Loading.show();
+        const res = await $axios.get(`episode/${id}`);
+        Loading.hide();
+        if (res && res.data) {
+          this.episode = {
+            ...res.data,
+            title: (res.data.title! as Record<string, number>)._id!,
+            date: res.data.date != null ? res.data.date.split(".").join("-") : null,
+          };
+          Object.assign(this.episodeOld, this.episode);
+        }
+      } catch (error) {
+        let errorMessage = "Failed to get episode by id!";
+        if (error instanceof AxiosError) {
+          errorMessage = error.message;
+        }
+        Loading.hide();
+        ShowErrorWithNotify(errorMessage);
+      }
+    },
+    async getByTitleId(id: number): Promise<void> {
+      try {
+        Loading.show();
+        const res = await $axios.get(`episodes/${id}`);
+        Loading.hide();
+        if (res && res.data) {
+          this.episodes = res.data;
+        }
+      } catch (error) {
+        let errorMessage = "Failed to get episodes by title id!";
+        if (error instanceof AxiosError) {
+          errorMessage = error.message;
+        }
+        Loading.hide();
+        ShowErrorWithNotify(errorMessage);
+      }
     },
     async editById(): Promise<void> {
-      if (this.episode && this.episode._id) {
-        const diff: any = {};
-        Object.keys(this.episode).forEach((k, i) => {
-          const newValue = Object.values(this.episode)[i];
-          const oldValue = Object.values(this.episodeOld)[i];
-          if (newValue != oldValue) diff[k] = newValue;
-        });
-        if (Object.keys(diff).length == 0) {
-          Notify.create({
-            message: "Nothing changed!",
-            color: "negative",
-          });
-          process.exit(0);
+      try {
+        if (this.episode && this.episode._id) {
+          Loading.show();
+          const diff = getDifferences(this.episode, this.episodeOld);
+          const res = await $axios.patch(`episode/${this.episode._id}`, diff);
+          Loading.hide();
+          if (res && res.data) {
+            Notify.create({
+              message: `Episode with id=${res.data._id} has been edited successfully!`,
+              color: "positive",
+            });
+          }
         }
-        // console.log(diff, this.episode);
-        Loading.show();
-        $axios
-          .patch(`episode/${this.episode._id}`, { ...diff, date: diff.date || null })
-          .then((res) => {
-            Loading.hide();
-            if (res && res.data) {
-              this.episode = {};
-              this.getAll();
-              Notify.create({
-                message: `Episode with id=${res.data._id} has been edited successfully!`,
-                color: "positive",
-              });
-            }
-          })
-          .catch((error) => {
-            ShowErrorWithNotify(error);
-          });
+      } catch (error) {
+        let errorMessage = "Failed to edit episode!";
+        if (error instanceof AxiosError) {
+          errorMessage = error.message;
+        }
+        Loading.hide();
+        ShowErrorWithNotify(errorMessage);
       }
     },
     async deleteById(params: IIdParams): Promise<void> {
-      Loading.show();
-      // const id = this.episode._id;
-      console.log("delete: ", params._id);
-      const response = await $axios.delete(`episode/${params._id}`);
-      if (response.status == 200) {
-        console.log("success");
-        Notify.create({
-          message: `Episode with id=${params._id} has been deleted successfully!`,
-          color: "positive",
-        });
-      } else {
-        ShowErrorWithNotify(response.statusText);
-      }
-      // $axios
-      //   .delete(`episode/${params._id}`)
-      //   .then(() => {
-      //     Loading.hide();
-      //     this.getAll();
-      //     this.episode = {};
-      //     Notify.create({
-      //       message: `Document with id=${params._id} has been deleted successfully!`,
-      //       color: "positive",
-      //     });
-      //   })
-      //   .catch((error) => {
-      //     ShowErrorWithNotify(error);
-      //   });
-    },
-
-    // csináld meg az dátumot rendesen!
-    async create(titleID: number): Promise<void> {
-      if (this.episode) {
+      try {
         Loading.show();
-        delete this.episode.title;
-        $axios
-          .post("episode", {
+        const response = await $axios.delete(`episode/${params._id}`);
+        Loading.hide();
+        if (response.status == 200) {
+          Notify.create({
+            message: `Episode with id=${params._id} has been deleted successfully!`,
+            color: "positive",
+          });
+        }
+      } catch (error) {
+        let errorMessage = "Failed to delete episode!";
+        if (error instanceof AxiosError) {
+          errorMessage = error.message;
+        }
+        Loading.hide();
+        ShowErrorWithNotify(errorMessage);
+      }
+    },
+    async create(titleID: number): Promise<void> {
+      try {
+        if (this.episode) {
+          Loading.show();
+          const res = await $axios.post("episode", {
             ...this.episode,
             title: titleID,
-            date: this.episode.date != null ? this.episode.date!.split("-").join(".") : null,
-          })
-          .then((res) => {
-            Loading.hide();
-            if (res && res.data) {
-              this.getAll();
-              this.episode._id = res.data._id!;
-              Notify.create({
-                message: `New document with id=${res.data._id} has been saved successfully!`,
-                color: "positive",
-              });
-            }
-          })
-          .catch((error) => {
-            ShowErrorWithNotify(error);
+            date: this.episode.date != null ? this.episode.date.split("-").join(".") : null,
           });
+          Loading.hide();
+          if (res && res.data) {
+            this.getAll();
+            this.episode._id = res.data._id!;
+            Notify.create({
+              message: `New document with id=${res.data._id} has been saved successfully!`,
+              color: "positive",
+            });
+          }
+        }
+      } catch (error) {
+        let errorMessage = "Failed to create episode!";
+        if (error instanceof AxiosError) {
+          errorMessage = error.message;
+        }
+        Loading.hide();
+        ShowErrorWithNotify(errorMessage);
       }
     },
   },
