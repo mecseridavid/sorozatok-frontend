@@ -1,6 +1,7 @@
 <script setup lang="ts">
     import { useEpisodeStore, IEpisode } from "../store/episodeStore";
     import { useTitleStore } from "../store/titleStore";
+    import TxtWritter from "../components/TxtWriter.vue";
 
     const episodeStore = useEpisodeStore();
     const titleStore = useTitleStore();
@@ -9,10 +10,10 @@
         const months = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4];
         let temp: { [index: string]: Set<string> } = {};
         weekDays.forEach((day) => (temp[day] = new Set()));
-        for (const element of episodeStore.episodes) {
-            if (element.date != null) {
-                const [, month, day] = element.date!.split(".");
-                let year = parseInt(element.date!.split(".")[0]);
+        for (const episode of episodeStore.episodes) {
+            if (episode.date !== "") {
+                const [, month, day] = episode.date!.split(".");
+                let year = parseInt(episode.date!.split(".")[0]);
                 if (parseInt(month) < 3) {
                     year -= 1;
                 }
@@ -28,7 +29,7 @@
                                 7
                         )
                     ];
-                temp[weekDay].add((element.title! as Record<string, string>).title!);
+                temp[weekDay].add((episode.title! as Record<string, string>).title!);
             }
         }
         return temp;
@@ -39,9 +40,9 @@
 
     const getReleasedates = (): string[] => {
         let temp: Set<string> = new Set();
-        for (const element of episodeStore.episodes) {
-            if (element.date != null) {
-                temp.add(element.date ?? "");
+        for (const episode of episodeStore.episodes) {
+            if (episode.date != null) {
+                temp.add(episode.date ?? "");
             }
         }
         return Array.from(temp).sort((a, b) => (a > b ? 1 : -1));
@@ -60,7 +61,7 @@
     const watchedEpisodes = () => {
         let counter = 0;
         for (const e of episodeStore.episodes) {
-            if (e.watched) {
+            if (e.watched === 1) {
                 counter++;
             }
         }
@@ -70,7 +71,7 @@
     const watchingTime = () => {
         let time = 0;
         for (const e of episodeStore.episodes) {
-            if (e.watched) {
+            if (e.watched === 1) {
                 time += e.duration || 0;
             }
         }
@@ -82,7 +83,7 @@
 
     const getEpisodesByDate = (date: string) =>
         episodeStore.episodes.filter((ep: IEpisode) => {
-            if (ep.date && date && ep.watched == false && ep.date <= date) {
+            if (ep.date && date && ep.watched === 0 && ep.date <= date) {
                 return ep;
             }
         });
@@ -113,6 +114,24 @@
         }
         return titleArr;
     };
+
+    function summa(): string {
+        let txt = "";
+        for (const title of getTitlesScreenTimeAndSumOfEp()) {
+            txt += `${ title.title } ${ title.time } ${ title.ep }\n`
+        }
+        return txt.slice(0, -1);
+    }
+
+    function lista(): string {
+        let txt = "";
+        for (const title of titleStore.titles) {
+            for (const episode of title.episodes!) {
+                txt += `${episode.date != "" ? episode.date : "NI"}\n${title.title}\n${episode.season}x${episode.episode! < 10 ? "0" + episode.episode : episode.episode}\n${episode.duration}\n${episode.watched}\n`;
+            }
+        }
+        return txt.slice(0, -1);
+    }
 
     onMounted(() => {
         episodeStore.getAll();
@@ -187,12 +206,19 @@
             </div>
         </div>
         <div>
-            <p>6. feladat</p>
+            <p class="flex justify-between items-center" style="width: 400px">6. feladat
+                <TxtWritter
+                    :content="summa()"
+                    filename="summa.txt"
+                    title="summa.txt letöltése"
+                />
+            </p>
+            
             <q-expansion-item
                 class="solution"
                 expand-separator
                 label="summa.txt"
-                style="max-width: 50%"
+                style="max-width: 400px"
             >
                 <div
                     v-for="title in getTitlesScreenTimeAndSumOfEp()"
@@ -231,6 +257,12 @@
                 <p v-else class="solution">Az adott napon nem kerül adásba sorozat.</p>
             </div>
         </div>
+          <TxtWritter
+            :content="lista()"
+            filename="lista.txt"
+            style="margin-top: 20px; width: 400px"
+            title="lista.txt írása a NoSQL adatbázisból"
+          />
     </q-page>
 </template>
 

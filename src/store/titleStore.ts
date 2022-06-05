@@ -12,13 +12,13 @@ Notify.setDefaults({
 });
 
 interface IObjectKeys {
-  [key: string]: number | string | null | IEpisode[] | undefined;
+  [key: string]: number | string | IEpisode[] | undefined;
 }
 
 export interface ITitle extends IObjectKeys {
   _id?: number;
   title?: string;
-  img?: string | null;
+  img?: string;
   episodes?: IEpisode[];
 }
 
@@ -52,6 +52,13 @@ function getDifferences(newTitle: ITitle, oldTitle: ITitle): ITitle | undefined 
     if (k === "episodes") {
       return;
     }
+    if (k === "img") {
+      const temp = Object.values(newTitle)[i] as string;
+      if (temp !== (Object.values(oldTitle)[i] as string)) {
+        diff[k as keyof ITitle] = newTitle.img = validateImage(temp);
+      }
+      return;
+    }
     const newValue = Object.values(newTitle)[i];
     const oldValue = Object.values(oldTitle)[i];
     if (newValue != oldValue) diff[k as keyof ITitle] = newValue;
@@ -61,9 +68,18 @@ function getDifferences(newTitle: ITitle, oldTitle: ITitle): ITitle | undefined 
       message: "Nothing changed!",
       color: "negative",
     });
+    Loading.hide();
     return;
   }
   return diff;
+}
+
+function validateImage(image: string): string {
+  if (image === "" || !image) {
+    image =
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/No_image_available.svg/1024px-No_image_available.svg.png";
+  }
+  return image;
 }
 
 export const useTitleStore = defineStore({
@@ -122,13 +138,15 @@ export const useTitleStore = defineStore({
         if (this.title && this.title._id) {
           Loading.show();
           const diff = getDifferences(this.title, this.titleOld);
-          const res = await $axios.patch(`title/${this.title._id}`, diff);
-          Loading.hide();
-          if (res && res.data) {
-            Notify.create({
-              message: `Title with id=${res.data._id} has been edited successfully!`,
-              color: "positive",
-            });
+          if (diff) {
+            const res = await $axios.patch(`title/${this.title._id}`, diff);
+            Loading.hide();
+            if (res && res.data) {
+              Notify.create({
+                message: `Title with id=${res.data._id} has been edited successfully!`,
+                color: "positive",
+              });
+            }
           }
         }
       } catch (error) {
@@ -165,7 +183,10 @@ export const useTitleStore = defineStore({
         if (this.title) {
           Loading.show();
           this.title.episodes = [];
-          const res = await $axios.post("title", this.title);
+          const res = await $axios.post("title", {
+            ...this.title,
+            img: validateImage(this.title.img!),
+          });
           Loading.hide();
           Notify.create({
             message: `New document with id=${res.data._id} has been saved successfully!`,

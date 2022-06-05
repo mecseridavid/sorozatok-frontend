@@ -9,11 +9,6 @@
     usernameOrEmail: string;
     password: string;
   }
-
-  // const r = reactive<IReactiveData>({
-  //   usernameOrEmail: "student001@jedlik.eu",
-  //   password: "student001",
-  // });
   const r = reactive<IReactiveData>({
     usernameOrEmail: "test",
     password: "test1234",

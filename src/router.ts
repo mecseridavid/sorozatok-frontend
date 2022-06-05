@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import AccountView from "./views/AccountView.vue";
 import GridSeriesViewVue from "./views/GridSeriesViewVue.vue";
-// import protectedRoute from "./middlewares/protected";
 import StartPageView from "./views/StartPageView.vue";
 
 const routes: Array<RouteRecordRaw> = [
@@ -26,7 +25,7 @@ const router = createRouter({
   routes,
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((_to, _from, next) => {
   next();
 });
 export default router;

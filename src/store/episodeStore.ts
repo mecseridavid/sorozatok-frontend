@@ -11,7 +11,7 @@ Notify.setDefaults({
 });
 
 interface IObjectKeys {
-  [key: string]: string | Record<string, string | number> | number | boolean | null | undefined;
+  [key: string]: string | Record<string, string | number> | number | undefined;
 }
 
 export interface IEpisode extends IObjectKeys {
@@ -22,11 +22,11 @@ export interface IEpisode extends IObjectKeys {
         title?: string;
       }
     | number;
-  date?: string | null;
+  date?: string;
   season?: number;
   episode?: number;
   duration?: number;
-  watched?: boolean;
+  watched?: number;
 }
 
 interface IIdParams {
@@ -49,15 +49,15 @@ function ShowErrorWithNotify(error: any): void {
 }
 
 function getDifferences(newEpisode: IEpisode, oldEpisode: IEpisode): IEpisode | undefined {
-  const diff: IEpisode = {}; //{ [key: string]: any }
+  const diff: IEpisode = {};
   Object.keys(newEpisode).forEach((k: string, i) => {
     if (k == "date") {
       const temp = Object.values(newEpisode)[i] as string;
-      if (temp != (Object.values(oldEpisode)[i] as string)) {
-        if (temp === "") {
-          diff[k as keyof IEpisode] = newEpisode.date = null;
-        } else {
+      if (temp !== (Object.values(oldEpisode)[i] as string)) {
+        if (temp !== "") {
           diff[k as keyof IEpisode] = newEpisode.date = temp.split("-").join(".");
+        } else {
+          diff[k as keyof IEpisode] = "";
         }
       }
       return;
@@ -71,7 +71,7 @@ function getDifferences(newEpisode: IEpisode, oldEpisode: IEpisode): IEpisode | 
       message: "Nothing changed!",
       color: "negative",
     });
-    // process.exit(0);
+    Loading.hide();
     return;
   }
   return diff;
@@ -155,13 +155,15 @@ export const useEpisodeStore = defineStore({
         if (this.episode && this.episode._id) {
           Loading.show();
           const diff = getDifferences(this.episode, this.episodeOld);
-          const res = await $axios.patch(`episode/${this.episode._id}`, diff);
-          Loading.hide();
-          if (res && res.data) {
-            Notify.create({
-              message: `Episode with id=${res.data._id} has been edited successfully!`,
-              color: "positive",
-            });
+          if (diff) {
+            const res = await $axios.patch(`episode/${this.episode._id}`, diff);
+            Loading.hide();
+            if (res && res.data) {
+              Notify.create({
+                message: `Episode with id=${res.data._id} has been edited successfully!`,
+                color: "positive",
+              });
+            }
           }
         }
       } catch (error) {
@@ -200,11 +202,11 @@ export const useEpisodeStore = defineStore({
           const res = await $axios.post("episode", {
             ...this.episode,
             title: titleID,
-            date: this.episode.date != null ? this.episode.date.split("-").join(".") : null,
+            date: this.episode.date!.split("-").join("."),
           });
           Loading.hide();
           if (res && res.data) {
-            this.getAll();
+            // this.getAll();
             this.episode._id = res.data._id!;
             Notify.create({
               message: `New document with id=${res.data._id} has been saved successfully!`,

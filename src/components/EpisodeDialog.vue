@@ -48,6 +48,8 @@
   onMounted(() => {
     if (props.editing) {
       episodeStore.getById(props.episodeId!);
+    } else {
+      episodeStore.episode = { date: "", watched: 0 };
     }
   });
 </script>
@@ -73,7 +75,7 @@
                   clearable
                   filled
                   mask="####-##-##"
-                  @clear="episodeStore.episode.date = null"
+                  @clear="episodeStore.episode.date = ''"
                 >
                   <template #append>
                     <q-icon class="cursor-pointer" name="event">
@@ -141,6 +143,9 @@
                 <q-toggle
                   v-model="episodeStore.episode.watched"
                   checked-icon="check"
+                  :false-value="0"
+                  :toggle-indeterminate="false"
+                  :true-value="1"
                   unchecked-icon="clear"
                 />
               </q-item-section>

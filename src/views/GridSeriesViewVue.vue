@@ -4,8 +4,6 @@
   import { useEpisodeStore, IEpisode } from "../store/episodeStore";
   import { Loading, Notify, QTableProps } from "quasar";
   import { storeToRefs } from "pinia";
-
-  // test
   import EpisodeDialog from "../components/EpisodeDialog.vue";
   import TitleDialog from "../components/TitleDialog.vue";
 
@@ -41,6 +39,10 @@
   watch(titles, () => {
     pagination.value.rowsNumber = titleStore.numberOfTitles;
   });
+
+  // const imageUrl = computed((image: string) => {
+  //   return imgError ? "" : image;
+  // });
 
   const episodeCols: QTableProps["columns"] = [
     {
@@ -234,7 +236,7 @@
             color="green"
             label="Add new Title"
             no-caps
-            @click="(titleStore.title = {}) && (openTitleFormForAdd = true)"
+            @click="openTitleFormForAdd = true"
           />
         </div>
       </template>
@@ -244,7 +246,49 @@
           <q-card class="q-ma-md">
             <div v-for="col in props.cols" :key="col._id">
               <div v-if="col.name == 'img'">
-                <q-img :fit="'fill'" :src="col.value" style="height: 400px">
+                <q-img :fit="'fill'" native-context-menu :src="col.value" style="height: 400px">
+                  <template #error>
+                    <div class="flex justify-between items-center absolute-top text-h5">
+                      <span>{{ props.row.title }}</span>
+                      <q-btn-dropdown
+                        v-if="userStore.loggedUser"
+                        auto-close
+                        class="float-right"
+                        content-class="transparent no-shadow"
+                        dense
+                        dropdown-icon="menu"
+                        flat
+                        no-caps
+                        size="lg"
+                        @show="selectedTitle = props.row"
+                      >
+                        <q-list>
+                          <q-item dense>
+                            <q-btn color="red" label="Delete" @click="deleteTitle" />
+                          </q-item>
+                          <q-item dense>
+                            <q-btn
+                              class="full-width"
+                              color="blue"
+                              label="Edit"
+                              @click="
+                                (selectedTitle = props.row) &&
+                                  (openTitleFormForEdit = editingTitle = true)
+                              "
+                            />
+                          </q-item>
+                        </q-list>
+                      </q-btn-dropdown>
+                    </div>
+                    <div class="absolute-bottom" style="padding: 0">
+                      <q-btn
+                        class="full-width q-ma-none"
+                        dense
+                        label="Episodes"
+                        @click="(selectedTitle = props.row) && (openEpisodesOfSelectedTitle = true)"
+                      />
+                    </div>
+                  </template>
                   <div class="flex justify-between items-center absolute-top text-h5">
                     <span>{{ props.row.title }}</span>
                     <q-btn-dropdown
@@ -347,7 +391,7 @@
                 <q-btn
                   v-if="userStore.loggedUser"
                   color="green"
-                  @click="() => (episodeStore.episode = {}) && (openEpisodeFormForAdd = true)"
+                  @click="openEpisodeFormForAdd = true"
                 >
                   Add
                 </q-btn>
@@ -364,7 +408,7 @@
                 <q-btn
                   v-if="userStore.loggedUser && selectedEpisodes.length == 0"
                   color="green"
-                  @click="() => (episodeStore.episode = {}) && (openEpisodeFormForAdd = true)"
+                  @click="openEpisodeFormForAdd = true"
                 >
                   Add
                 </q-btn>
@@ -449,7 +493,7 @@
           </template>
           <template #body-cell-watched="props">
             <q-td :props="props">
-              <q-badge v-if="props.value" color="green" label="Yes" outline />
+              <q-badge v-if="props.value === 1" color="green" label="Yes" outline />
               <q-badge v-else color="red" label="No" outline />
             </q-td>
           </template>

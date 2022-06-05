@@ -41,15 +41,17 @@
   }
 
   function validateUrl(url: string) {
-    if (url) {
-      return /\/\/(\S+?(?:jpe?g|png|gif))/.test(url);
+    if (url === "") {
+      return true;
     }
-    return true;
+    return /\/\/(\S+?(?:png|jpg|jpeg|gif|png|svg))/.test(url);
   }
 
   onMounted(() => {
     if (props.editing) {
       titleStore.getById(props.titleId!);
+    } else {
+      titleStore.title = { img: "" };
     }
   });
 </script>
