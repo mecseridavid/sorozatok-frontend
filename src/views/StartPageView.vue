@@ -114,7 +114,7 @@
             titleArr[t].time = count;
         }
         return titleArr;
-    };
+    }
 
     function summa(): string {
         let txt = "";
@@ -142,8 +142,8 @@
 <template>
     <q-page>
         <div class="row justify-center">
-            <!-- col-12 col-sm-8 col-md-6 col-lg-4 q-gutter-md -->
-            <div class="col-12 col-sm-8 col-md-6 col-lg-4 q-gutter-md">
+            <div class="q-pa-md col-12 col-sm-8 col-md-6 col-lg-4" :class="$q.dark.isActive ? 'bg-grey-9' : 'bg-grey-3'">
+                <div class="text-h4 text-center q-py-md">Sorozatok feladat megoldása</div>
                 <div>
                     <p>2. feladat</p>
                     <div class="task">
