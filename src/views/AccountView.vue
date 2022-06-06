@@ -3,8 +3,6 @@
 
   const usersStore = useUsersStore();
 
-  const anyLoggedUser = computed(() => (usersStore.getLoggedUser ? true : false));
-
   interface IReactiveData {
     usernameOrEmail: string;
     password: string;
@@ -15,7 +13,7 @@
   });
 
   function Submit() {
-    if (!anyLoggedUser.value) {
+    if (!usersStore.loggedUser) {
       usersStore.loginUser(r.usernameOrEmail, r.password);
     } else {
       usersStore.logOut();
@@ -28,21 +26,23 @@
     <div class="row justify-center">
       <div class="col-12 col-sm-8 col-md-6 col-lg-4 q-gutter-md">
         <q-form @submit="Submit">
-          <h5 v-if="!anyLoggedUser" class="text-center q-mt-sm q-mb-none">Login</h5>
-          <h5 v-else class="text-center q-mt-sm q-mb-none">Logout</h5>
+          <h5 v-if="!usersStore.loggedUser" class="text-center q-mt-sm q-mb-none">
+            {{ $t("login") }}
+          </h5>
+          <h5 v-else class="text-center q-mt-sm q-mb-none">{{ $t("logout") }}</h5>
           <q-input
             v-model="r.usernameOrEmail"
-            :disable="anyLoggedUser"
+            :disable="usersStore.loggedUser != null"
             filled
-            label="e-mail:"
+            :label="$t('unameOrEmail') + ':'"
             :rules="[(v) => (v != null && v != '') || 'Please fill in!']"
             type="text"
           />
           <q-input
-            v-if="!anyLoggedUser"
+            v-if="!usersStore.loggedUser"
             v-model="r.password"
             filled
-            label="Password:"
+            :label="$t('password') + ':'"
             :rules="[(v) => (v != null && v != '') || 'Please fill in!']"
             type="text"
           />
@@ -50,7 +50,7 @@
             <q-btn
               class="q-mr-md"
               color="green"
-              :label="anyLoggedUser ? 'Logout' : 'Login'"
+              :label="usersStore.loggedUser ? $t('logout') : $t('login')"
               no-caps
               type="submit"
             />

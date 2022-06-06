@@ -1,14 +1,16 @@
 <script setup lang="ts">
   import { useI18n } from "vue-i18n";
+  import { Quasar } from "quasar";
   import router from "src/router";
   import { useUsersStore } from "./store/usersStore";
 
-  const leftDrawer = ref<boolean>(true);
+  const leftDrawer = ref(false);
+  const miniState = ref(true);
   const usersStore = useUsersStore();
 
   let { locale, t } = useI18n({
     inheritLocale: true,
-    useScope: "global", // Change to "local" if you want to add <i18n></i18n> locally
+    useScope: "global",
   });
 
   const menuItems = ref([
@@ -34,14 +36,37 @@
       name: "account",
       route: "/account",
       disabled: false,
-      separator: false,
+      separator: true,
+    },
+    {
+      icon: "mdi-information",
+      text: t("about"),
+      name: "about",
+      route: "/about",
+      disabled: false,
+      separator: true,
     },
   ]);
 
   function toggleLanguage() {
-    locale.value = locale.value == "hu" ? "en" : "hu";
+    interface Lang {
+      label: string;
+      value: string;
+    }
+    const langs: Lang[] = [
+      { label: "hu", value: "hu" },
+      { label: "en", value: "en-US" },
+    ];
+    locale.value = locale.value == langs[0].value ? langs[1].label : langs[0].label;
     menuItems.value.forEach((e) => {
       if (e.name != "") e.text = t(e.name);
+    });
+    import(
+      `../node_modules/quasar/lang/${
+        langs[langs.findIndex((lang: Lang) => lang.label == locale.value)].value
+      }`
+    ).then((language) => {
+      Quasar.lang.set(language.default);
     });
   }
 
@@ -76,21 +101,17 @@
 <template>
   <div class="q-pa-md">
     <q-layout view="hHh Lpr fFf">
-      <q-header class="bg-primary text-white text-left" elevated>
+      <q-header class="bg-secondary text-white text-left" elevated>
         <q-toolbar>
           <q-btn dense flat icon="mdi-menu" round @click="leftDrawer = !leftDrawer" />
           <q-toolbar-title id="title" style="cursor: pointer" @click="router.push({ path: '/' })">
-            <!-- <q-avatar>
-              <img src="src/assets/Jedlik_small.png" />
-            </q-avatar> -->
             {{ $t("header") }} 2022 -
-            {{ usersStore.loggedUser ? usersStore.loggedUser?.name : $t("noUser") }}
+            {{ usersStore.loggedUser ? usersStore.loggedUser!.name : $t("noUser") }}
           </q-toolbar-title>
           <q-btn flat icon="mdi-comment-text-multiple" @click="toggleLanguage">
-            <q-badge color="red" floating>{{ locale }}</q-badge>
+            <q-badge color="primary" floating>{{ locale }}</q-badge>
           </q-btn>
           <q-btn flat icon="mdi-theme-light-dark" @click="$q.dark.toggle" />
-          <q-btn dense flat icon="mdi-menu" round @click="leftDrawer = !leftDrawer" />
         </q-toolbar>
       </q-header>
 
@@ -98,12 +119,15 @@
         v-model="leftDrawer"
         bordered
         :breakpoint="500"
-        :class="$q.dark.isActive ? 'bg-grey-9' : 'bg-grey-3'"
+        :class="$q.dark.isActive ? 'bg-grey-9 primary' : 'bg-grey-3 secondary'"
+        :mini="miniState"
+        persistent
         show-if-above
         :width="200"
+        @mouseout="miniState = true"
+        @mouseover="miniState = false"
       >
         <q-scroll-area class="fit">
-          <!-- routes: -->
           <q-list>
             <template v-for="(menuItem, index) in menuItems" :key="index">
               <q-item clickable :disable="menuItem.disabled" :to="menuItem.route">
@@ -116,10 +140,7 @@
               </q-item>
               <q-separator v-if="menuItem.separator" :key="'sep' + index" />
             </template>
-            <!-- :disable="usersStore.loggedUser == null" -->
-            <q-separator />
           </q-list>
-          <!-- links: -->
           <q-list>
             <template v-for="(linkItem, index) in links" :key="index">
               <q-item clickable :href="linkItem.link">
@@ -130,7 +151,6 @@
                   {{ linkItem.text }}
                 </q-item-section>
               </q-item>
-              <q-separator v-if="linkItem.separator" :key="'sep' + index" />
             </template>
           </q-list>
         </q-scroll-area>
@@ -174,5 +194,9 @@
     @media (min-width: 1200px) {
       font-size: calc(18px + 0.5vw);
     }
+  }
+
+  .q-item.q-router-link--active {
+    color: $secondary;
   }
 </style>

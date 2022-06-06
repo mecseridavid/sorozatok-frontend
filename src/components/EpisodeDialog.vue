@@ -1,8 +1,10 @@
 <script setup lang="ts">
   import { computed } from "vue";
   import { useEpisodeStore } from "../store/episodeStore";
+  import { useI18n } from "vue-i18n";
 
   const episodeStore = useEpisodeStore();
+  const { t } = useI18n({ useScope: "global" });
 
   const props = defineProps<{
     modelValue: boolean;
@@ -27,6 +29,12 @@
     set(value: boolean) {
       return emit("update:modelValue", value);
     },
+  });
+
+  const title = computed(() => {
+    return props.editing
+      ? t("editEpisode", { title: props.selectedTitle.title })
+      : t("newEpisode", { title: props.selectedTitle.title });
   });
 
   function send() {
@@ -59,7 +67,7 @@
     <q-card style="min-width: 700px">
       <q-card-section>
         <div class="q-px-xl text-h5 text-center">
-          {{ editing ? "Edit episode of " : "Add episode to " }}{{ props.selectedTitle.title }}
+          {{ title }}
         </div>
       </q-card-section>
       <q-card-section>
@@ -67,7 +75,7 @@
           <q-list dense>
             <q-item dense>
               <q-item-section>
-                <q-item-label>Date</q-item-label>
+                <q-item-label>{{ t("date") }}</q-item-label>
               </q-item-section>
               <q-item-section>
                 <q-input
@@ -82,12 +90,12 @@
                       <q-popup-proxy cover transition-hide="scale" transition-show="scale">
                         <q-date
                           v-model="episodeStore.episode.date"
-                          subtitle="Years"
-                          title="Calendar"
+                          :subtitle="t('years')"
+                          :title="t('calendar')"
                           today-btn
                         >
                           <div class="row items-center justify-end">
-                            <q-btn v-close-popup color="primary" flat label="Close" />
+                            <q-btn v-close-popup color="primary" flat :label="t('close')" />
                           </div>
                         </q-date>
                       </q-popup-proxy>
@@ -98,46 +106,46 @@
             </q-item>
             <q-item dense>
               <q-item-section>
-                <q-item-label>Season</q-item-label>
+                <q-item-label>{{ t("season") }}</q-item-label>
               </q-item-section>
               <q-item-section>
                 <q-input
                   v-model.number="episodeStore.episode.season"
                   filled
-                  :rules="[(v) => (v != null && v != '') || 'Please fill in!']"
+                  :rules="[(v) => (v != null && v != '') || t('inputRule')]"
                   type="number"
                 />
               </q-item-section>
             </q-item>
             <q-item dense>
               <q-item-section>
-                <q-item-label>Episode</q-item-label>
+                <q-item-label>{{ t("episode") }}</q-item-label>
               </q-item-section>
               <q-item-section>
                 <q-input
                   v-model.number="episodeStore.episode.episode"
                   filled
-                  :rules="[(v) => (v != null && v != '') || 'Please fill in!']"
+                  :rules="[(v) => (v != null && v != '') || t('inputRule')]"
                   type="number"
                 />
               </q-item-section>
             </q-item>
             <q-item dense>
               <q-item-section>
-                <q-item-label>Duration</q-item-label>
+                <q-item-label>{{ t("duration") }}</q-item-label>
               </q-item-section>
               <q-item-section>
                 <q-input
                   v-model.number="episodeStore.episode.duration"
                   filled
-                  :rules="[(v) => (v != null && v != '') || 'Please fill in!']"
+                  :rules="[(v) => (v != null && v != '') || t('inputRule')]"
                   type="number"
                 />
               </q-item-section>
             </q-item>
             <q-item dense>
               <q-item-section>
-                <q-item-label>Had you watched?</q-item-label>
+                <q-item-label>{{ t("haveBeenWatched") }}</q-item-label>
               </q-item-section>
               <q-item-section>
                 <q-toggle
@@ -153,8 +161,8 @@
           </q-list>
 
           <div class="q-mt-xl row justify-center">
-            <q-btn class="q-mr-md" color="green" label="Submit" no-caps type="submit" />
-            <q-btn class="q-mr-md" color="red" label="Cancel" no-caps @click="cancel" />
+            <q-btn class="q-mr-md" color="green" :label="t('submit')" no-caps type="submit" />
+            <q-btn class="q-mr-md" color="red" :label="t('cancel')" no-caps @click="cancel" />
           </div>
         </q-form>
       </q-card-section>

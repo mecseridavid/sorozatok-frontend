@@ -1,7 +1,9 @@
 <script setup lang="ts">
   import { useTitleStore } from "../store/titleStore";
+  import { useI18n } from "vue-i18n";
 
   const titleStore = useTitleStore();
+  const { t } = useI18n({ useScope: "global" });
 
   const props = defineProps<{
     modelValue: boolean;
@@ -23,6 +25,10 @@
     set(value: boolean) {
       return emit("update:modelValue", value);
     },
+  });
+
+  const title = computed(() => {
+    return props.editing ? t("editTitle", { title: titleStore.title.title }) : t("newTitle");
   });
 
   async function send() {
@@ -61,7 +67,7 @@
     <q-card style="min-width: 500px">
       <q-card-section>
         <div class="q-px-xl text-h5 text-center">
-          {{ editing ? `Edit ${titleStore.title.title}` : "Add new title " }}
+          {{ title }}
         </div>
       </q-card-section>
       <q-card-section>
@@ -69,42 +75,48 @@
           <q-list dense>
             <q-item dense>
               <q-item-section>
-                <q-item-label>Title</q-item-label>
+                <q-item-label>{{ t("title") }}</q-item-label>
               </q-item-section>
               <q-item-section>
                 <q-input
                   v-model="titleStore.title.title"
                   filled
-                  :rules="[(v) => (v != null && v != '') || 'Cannot be empty!']"
+                  :rules="[(v) => (v != null && v != '') || t('inputRule')]"
                   type="text"
                 />
               </q-item-section>
             </q-item>
             <q-item dense>
               <q-item-section>
-                <q-item-label>Image</q-item-label>
+                <q-item-label>{{ t("img") }}</q-item-label>
               </q-item-section>
               <q-item-section>
                 <q-input
                   v-model="titleStore.title.img"
                   filled
-                  :rules="[(url) => validateUrl(url) || 'This must be an image or empty!']"
+                  :rules="[(url) => validateUrl(url) || t('imgRule')]"
                   type="url"
                 />
-                <q-linear-progress />
+                <q-linear-progress v-if="false" />
               </q-item-section>
             </q-item>
-            <q-item>
+            <q-item v-if="false">
               <q-item-section></q-item-section>
               <q-item-section>
-                <q-btn disable icon="cloud_upload" label="Upload" no-caps></q-btn>
+                <q-btn disable icon="cloud_upload" :label="t('upload')" no-caps></q-btn>
               </q-item-section>
             </q-item>
           </q-list>
 
           <div class="q-mt-xl row justify-center">
-            <q-btn class="q-mr-md" color="green" label="Submit" no-caps type="submit" />
-            <q-btn class="q-mr-md" color="red" label="Cancel" no-caps @click="cancel" />
+            <q-btn
+              class="q-mr-md"
+              color="green"
+              :label="editing ? t('edit') : t('submit')"
+              no-caps
+              type="submit"
+            />
+            <q-btn class="q-mr-md" color="red" :label="t('cancel')" no-caps @click="cancel" />
           </div>
         </q-form>
       </q-card-section>

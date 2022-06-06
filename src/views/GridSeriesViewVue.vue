@@ -4,14 +4,17 @@
   import { useEpisodeStore, IEpisode } from "../store/episodeStore";
   import { Loading, Notify, QTableProps } from "quasar";
   import { storeToRefs } from "pinia";
+  import { useI18n } from "vue-i18n";
   import EpisodeDialog from "../components/EpisodeDialog.vue";
   import TitleDialog from "../components/TitleDialog.vue";
+  import InsideImage from "../components/InsideImage.vue";
 
   const titleStore = useTitleStore();
   const episodeStore = useEpisodeStore();
   const userStore = useUsersStore();
 
   const { titles } = storeToRefs(titleStore);
+  const { t } = useI18n({ useScope: "global" });
 
   const selectedTitle = ref<ITitle>({});
   const selectedEpisodes = ref<IEpisode[]>([]);
@@ -40,11 +43,7 @@
     pagination.value.rowsNumber = titleStore.numberOfTitles;
   });
 
-  // const imageUrl = computed((image: string) => {
-  //   return imgError ? "" : image;
-  // });
-
-  const episodeCols: QTableProps["columns"] = [
+  const episodeCols = computed((): QTableProps["columns"] => [
     {
       name: "_id",
       label: "",
@@ -54,44 +53,40 @@
     },
     {
       name: "date",
-      label: "Date",
+      label: t("date"),
       field: "date",
       align: "center",
       sortable: true,
     },
     {
       name: "season",
-      label: "Season",
+      label: t("season"),
       field: "season",
       align: "center",
       sortable: true,
-      headerStyle: "max-width: 60px",
     },
     {
       name: "episode",
-      label: "Episode",
+      label: t("episode"),
       field: "episode",
       align: "center",
       sortable: true,
-      headerStyle: "max-width: 60px",
     },
     {
       name: "duration",
-      label: "Duration (min)",
+      label: t("duration"),
       field: "duration",
       align: "center",
       sortable: true,
-      headerStyle: "max-width: 80px",
     },
     {
       name: "watched",
-      label: "Watched",
+      label: t("watched"),
       field: "watched",
       align: "center",
       sortable: true,
-      headerStyle: "max-width: 50px",
     },
-  ];
+  ]);
   const titleCols: QTableProps["columns"] = [
     {
       name: "_id",
@@ -108,29 +103,17 @@
       sortable: true,
     },
     { name: "img", label: "Image", field: "img", align: "left" },
-    {
-      name: "deleteBtn",
-      label: "Delete",
-      field: "deleteBtn",
-      style: "max-width: 30px",
-    },
-    {
-      name: "editBtn",
-      label: "Edit",
-      field: "editBtn",
-      style: "max-width: 30px",
-    },
   ];
 
   function deleteTitle() {
     if (selectedTitle.value.episodes!.length > 0) {
       Notify.create({
-        message: "You can't delete title if episodes is not empty!",
+        message: t("deleteTitle"),
         color: "negative",
       });
     } else {
       titleStore.deleteById(selectedTitle.value._id!).then(() => {
-        titleStore.titles.filter((t) => t._id != selectedTitle.value._id);
+        titleStore.titles.filter((title) => title._id != selectedTitle.value._id);
         updateTitleTable();
         selectedTitle.value = {};
       });
@@ -169,7 +152,7 @@
   function exitFromTitleForm(save?: boolean) {
     if (save) {
       if (editingTitle.value) {
-        const index = titleStore.titles.findIndex((t) => t._id == selectedTitle.value._id);
+        const index = titleStore.titles.findIndex((title) => title._id == selectedTitle.value._id);
         titleStore.titles[index] = titleStore.title;
         editingTitle.value = false;
       } else {
@@ -215,12 +198,10 @@
       grid
       row-key="_id"
       :rows="titleStore.titles"
-      title="All Series"
-      title-class="text-h4 text-italic"
       @request="onRequest"
     >
       <template #top-right>
-        <q-input v-model="filter" debounce="300" dense placeholder="Search">
+        <q-input v-model="filter" debounce="300" dense :placeholder="t('search')">
           <template #append>
             <q-icon name="search" />
           </template>
@@ -229,12 +210,12 @@
 
       <template #top-left>
         <div>
-          <span class="text-h4 text-italic">All Series</span>
+          <span class="text-h5 text-italic">{{ t("gridTitle") }}</span>
           <q-btn
             v-if="userStore.loggedUser"
             class="absolute-center"
             color="green"
-            label="Add new Title"
+            :label="t('newTitle')"
             no-caps
             @click="openTitleFormForAdd = true"
           />
@@ -247,88 +228,33 @@
             <div v-for="col in props.cols" :key="col._id">
               <div v-if="col.name == 'img'">
                 <q-img :fit="'fill'" native-context-menu :src="col.value" style="height: 400px">
-                  <template #error>
-                    <div class="flex justify-between items-center absolute-top text-h5">
-                      <span>{{ props.row.title }}</span>
-                      <q-btn-dropdown
-                        v-if="userStore.loggedUser"
-                        auto-close
-                        class="float-right"
-                        content-class="transparent no-shadow"
-                        dense
-                        dropdown-icon="menu"
-                        flat
-                        no-caps
-                        size="lg"
-                        @show="selectedTitle = props.row"
-                      >
-                        <q-list>
-                          <q-item dense>
-                            <q-btn color="red" label="Delete" @click="deleteTitle" />
-                          </q-item>
-                          <q-item dense>
-                            <q-btn
-                              class="full-width"
-                              color="blue"
-                              label="Edit"
-                              @click="
-                                (selectedTitle = props.row) &&
-                                  (openTitleFormForEdit = editingTitle = true)
-                              "
-                            />
-                          </q-item>
-                        </q-list>
-                      </q-btn-dropdown>
-                    </div>
-                    <div class="absolute-bottom" style="padding: 0">
-                      <q-btn
-                        class="full-width q-ma-none"
-                        dense
-                        label="Episodes"
-                        @click="(selectedTitle = props.row) && (openEpisodesOfSelectedTitle = true)"
-                      />
-                    </div>
-                  </template>
-                  <div class="flex justify-between items-center absolute-top text-h5">
-                    <span>{{ props.row.title }}</span>
-                    <q-btn-dropdown
-                      v-if="userStore.loggedUser"
-                      auto-close
-                      class="float-right"
-                      content-class="transparent no-shadow"
-                      dense
-                      dropdown-icon="menu"
-                      flat
-                      no-caps
-                      size="lg"
-                      @show="selectedTitle = props.row"
-                    >
-                      <q-list>
-                        <q-item dense>
-                          <q-btn color="red" label="Delete" @click="deleteTitle" />
-                        </q-item>
-                        <q-item dense>
-                          <q-btn
-                            class="full-width"
-                            color="blue"
-                            label="Edit"
-                            @click="
-                              (selectedTitle = props.row) &&
-                                (openTitleFormForEdit = editingTitle = true)
-                            "
-                          />
-                        </q-item>
-                      </q-list>
-                    </q-btn-dropdown>
-                  </div>
-                  <div class="absolute-bottom" style="padding: 0">
-                    <q-btn
-                      class="full-width q-ma-none"
-                      dense
-                      label="Episodes"
-                      @click="(selectedTitle = props.row) && (openEpisodesOfSelectedTitle = true)"
+                  <template #default>
+                    <InsideImage
+                      :row="props.row"
+                      @delete-title="deleteTitle"
+                      @editing-title="(value) => (editingTitle = value)"
+                      @open-episodes-of-selected-title="
+                        (value) => (openEpisodesOfSelectedTitle = value)
+                      "
+                      @open-title-form-for-edit="(value) => (openTitleFormForEdit = value)"
+                      @update:selected-title="(title) => (selectedTitle = title)"
                     />
-                  </div>
+                  </template>
+                  <template #loading>
+                    <q-spinner-gears :color="$q.dark.isActive ? 'white' : 'black'" />
+                  </template>
+                  <template #error>
+                    <InsideImage
+                      :row="props.row"
+                      @delete-title="deleteTitle"
+                      @editing-title="(value) => (editingTitle = value)"
+                      @open-episodes-of-selected-title="
+                        (value) => (openEpisodesOfSelectedTitle = value)
+                      "
+                      @open-title-form-for-edit="(value) => (openTitleFormForEdit = value)"
+                      @update:selected-title="(title) => (selectedTitle = title)"
+                    />
+                  </template>
                 </q-img>
               </div>
             </div>
@@ -342,7 +268,7 @@
       :maximized="maximizedToggle"
       persistent
     >
-      <q-card style="min-width: 700px">
+      <q-card style="max-width: 800px">
         <q-bar>
           Episodes of {{ selectedTitle.title }}
           <q-space />
@@ -353,7 +279,9 @@
             icon="minimize"
             @click="maximizedToggle = false"
           >
-            <q-tooltip v-if="maximizedToggle" class="bg-white text-primary">Minimize</q-tooltip>
+            <q-tooltip v-if="maximizedToggle" class="bg-white text-primary">
+              {{ t("min") }}
+            </q-tooltip>
           </q-btn>
           <q-btn
             dense
@@ -362,7 +290,9 @@
             icon="crop_square"
             @click="maximizedToggle = true"
           >
-            <q-tooltip v-if="!maximizedToggle" class="bg-white text-primary">Maximize</q-tooltip>
+            <q-tooltip v-if="!maximizedToggle" class="bg-white text-primary">
+              {{ t("max") }}
+            </q-tooltip>
           </q-btn>
           <!-- (maximizedToggle = false) && (selectedEpisodes = []) -->
           <q-btn
@@ -372,14 +302,15 @@
             icon="close"
             @click="() => (selectedEpisodes = []) && (maximizedToggle = false)"
           >
-            <q-tooltip class="bg-white text-primary">Close</q-tooltip>
+            <q-tooltip class="bg-white text-primary">{{ t("close") }}</q-tooltip>
           </q-btn>
         </q-bar>
         <q-table
           v-model:selected="selectedEpisodes"
           :columns="episodeCols"
+          :dense="$q.screen.lt.md"
           hide-selected-banner
-          :pagination="{ rowsPerPage: 10 }"
+          :pagination="{ rowsPerPage: 8 }"
           row-key="_id"
           :rows="selectedTitle.episodes"
           :selection="userStore.loggedUser ? 'multiple' : 'none'"
@@ -393,12 +324,12 @@
                   color="green"
                   @click="openEpisodeFormForAdd = true"
                 >
-                  Add
+                  {{ t("newEpisodeBtn") }}
                 </q-btn>
               </div>
-              <div>
+              <div style="margin: auto">
                 <q-icon name="sentiment_dissatisfied" size="2em" />
-                <span>Well this is sad... {{ message }}</span>
+                <span>{{ message }}</span>
               </div>
             </div>
           </template>
@@ -408,29 +339,32 @@
                 <q-btn
                   v-if="userStore.loggedUser && selectedEpisodes.length == 0"
                   color="green"
+                  no-caps
                   @click="openEpisodeFormForAdd = true"
                 >
-                  Add
+                  {{ t("newEpisodeBtn") }}
                 </q-btn>
                 <q-btn
                   v-else-if="selectedEpisodes.length != 0"
                   class="q-mr-sm"
                   color="red"
+                  no-caps
                   @click="deleteOneOrMoreEpisode()"
                 >
-                  Delete
+                  {{ t("delete") }}
                 </q-btn>
                 <q-btn
                   v-if="selectedEpisodes.length == 1"
                   class="q-ml-sm"
                   color="blue"
+                  no-caps
                   @click="
                     () =>
                       (openEpisodeFormForEdit = editingEpisode = true) &&
                       (openEpisodesOfSelectedTitle = false)
                   "
                 >
-                  Edit
+                  {{ t("edit") }}
                 </q-btn>
               </div>
               <div class="flex row">
@@ -440,7 +374,7 @@
                   dense
                   emit-value
                   map-options
-                  :options="[3, 5, 7, 10, 15, 20, { label: 'All', value: 0 }]"
+                  :options="[3, 5, 7, 10, 15, 20, { label: t('all'), value: 0 }]"
                   options-dense
                 />
                 <q-btn
@@ -493,17 +427,17 @@
           </template>
           <template #body-cell-watched="props">
             <q-td :props="props">
-              <q-badge v-if="props.value === 1" color="green" label="Yes" outline />
-              <q-badge v-else color="red" label="No" outline />
+              <q-badge v-if="props.value === 1" color="green" :label="t('yes')" outline />
+              <q-badge v-else color="red" :label="t('no')" outline />
             </q-td>
           </template>
           <template #header="props">
-            <q-tr class="bg-primary" :props="props">
+            <q-tr class="bg-secondary" :props="props">
               <q-th v-if="userStore.loggedUser">
-                <q-checkbox v-model="props.selected" color="secondary" keep-color />
+                <q-checkbox v-model="props.selected" color="primary" keep-color />
               </q-th>
               <q-th v-for="col in props.cols" :key="col.name" :props="props">
-                <span class="text-center text-overline text-weight-bold text-grey-1">
+                <span class="text-overline text-weight-bold text-grey-1">
                   {{ col.label }}
                 </span>
               </q-th>
@@ -543,4 +477,12 @@
   </q-page>
 </template>
 
-<style scoped></style>
+<style scoped>
+  .q-table th,
+  .q-table td {
+    padding: 10 !important;
+  }
+  .q-table {
+    border-spacing: 2px !important;
+  }
+</style>

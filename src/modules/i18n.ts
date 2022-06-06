@@ -4,7 +4,7 @@ import hu from "../locales/hu.json";
 
 export const install = (app: any) => {
   const i18nObject = createI18n({
-    locale: process.env.VUE_APP_I18N_LOCALE || "en",
+    locale: process.env.VUE_APP_I18N_LOCALE || "hu",
     fallbackLocale: process.env.VUE_APP_I18N_FALLBACK_LOCALE || "en",
     messages: {
       en,
