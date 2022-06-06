@@ -96,12 +96,6 @@
       separator: false,
     },
   ]);
-
-  onMounted(() => {
-    import("quasar/lang/hu").then((language) => {
-      Quasar.lang.set(language.default);
-    });
-  });
 </script>
 
 <template>
