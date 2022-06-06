@@ -5,7 +5,6 @@ import "@quasar/extras/mdi-v6/mdi-v6.css";
 import "quasar/src/css/index.sass";
 
 import { Quasar, Notify, Dialog, LocalStorage, QuasarPluginOptions } from "quasar";
-import hu from "quasar/lang/hu";
 
 const config: Partial<QuasarPluginOptions> = {
   plugins: { Notify, Dialog, LocalStorage },
@@ -25,7 +24,6 @@ const config: Partial<QuasarPluginOptions> = {
   config: {
     dark: true,
   },
-  lang: hu,
 };
 
 export const install = (app: any) => {
