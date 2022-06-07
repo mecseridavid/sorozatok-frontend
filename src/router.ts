@@ -1,6 +1,6 @@
 import { createRouter, createWebHistory, RouteRecordRaw } from "vue-router";
 import AccountView from "./views/AccountView.vue";
-import GridSeriesViewVue from "./views/GridSeriesViewVue.vue";
+import GridSeriesView from "./views/GridSeriesView.vue";
 import StartPageView from "./views/StartPageView.vue";
 import AboutView from "./views/About.vue";
 
@@ -18,7 +18,7 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: "/grid",
     name: "grid-series",
-    component: GridSeriesViewVue,
+    component: GridSeriesView,
   },
   {
     path: "/about",

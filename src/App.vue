@@ -49,24 +49,23 @@
   ]);
 
   function toggleLanguage() {
-    interface Lang {
-      label: string;
-      value: string;
-    }
-    const langs: Lang[] = [
+    const langs: Record<string, string>[] = [
       { label: "hu", value: "hu" },
       { label: "en", value: "en-US" },
     ];
+
     locale.value = locale.value == langs[0].value ? langs[1].label : langs[0].label;
+    switch (locale.value) {
+      case "hu":
+        import("quasar/lang/hu").then((lang) => Quasar.lang.set(lang.default));
+        break;
+      case "en":
+        import("quasar/lang/en-US").then((lang) => Quasar.lang.set(lang.default));
+        break;
+    }
+
     menuItems.value.forEach((e) => {
       if (e.name != "") e.text = t(e.name);
-    });
-    import(
-      `../node_modules/quasar/lang/${
-        langs[langs.findIndex((lang: Lang) => lang.label == locale.value)].value
-      }`
-    ).then((language) => {
-      Quasar.lang.set(language.default);
     });
   }
 
@@ -96,6 +95,10 @@
       separator: false,
     },
   ]);
+
+  onMounted(() => {
+    import("quasar/lang/hu").then((lang) => Quasar.lang.set(lang.default));
+  });
 </script>
 
 <template>
