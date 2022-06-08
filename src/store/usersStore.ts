@@ -10,7 +10,7 @@ Notify.setDefaults({
   actions: [{ icon: "close", color: "white" }],
 });
 
-interface IUser {
+export interface IUser {
   _id?: string;
   name?: string;
   username?: string;
@@ -50,6 +50,28 @@ export const useUsersStore = defineStore({
         }
       } catch (error) {
         let errorMessage = "Error on Authentication!";
+        if (error instanceof AxiosError) {
+          errorMessage = error.message;
+        }
+        this.loggedUser = null;
+        Loading.hide();
+        Notify.create({ message: errorMessage, color: "negative" });
+      }
+    },
+    async registration(user: IUser): Promise<void> {
+      try {
+        Loading.show();
+        const res = await $axios.post("auth/register", user);
+        if (res && res.data) {
+          this.loggedUser = res.data;
+          Loading.hide();
+          Notify.create({
+            message: `Successfully registrated`,
+            color: "positive",
+          });
+        }
+      } catch (error) {
+        let errorMessage = "Error on Registration!";
         if (error instanceof AxiosError) {
           errorMessage = error.message;
         }

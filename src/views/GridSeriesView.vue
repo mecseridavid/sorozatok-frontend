@@ -227,7 +227,13 @@
           <q-card class="q-ma-md">
             <div v-for="col in props.cols" :key="col._id">
               <div v-if="col.name == 'img'">
-                <q-img :fit="'fill'" native-context-menu :src="col.value" style="height: 400px">
+                <q-img
+                  :class="$q.dark.isActive ? 'shadow-5' : 'shadow-10'"
+                  :fit="'fill'"
+                  native-context-menu
+                  :src="col.value"
+                  style="height: 400px"
+                >
                   <template #default>
                     <InsideImage
                       :row="props.row"

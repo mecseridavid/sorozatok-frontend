@@ -1,62 +1,43 @@
 <script setup lang="ts">
-  import { useUsersStore } from "../store/usersStore";
+  import { useUsersStore } from "src/store/usersStore";
+  import LoginForm from "../components/LoginForm.vue";
+  import RegisterForm from "../components/RegisterForm.vue";
 
-  const usersStore = useUsersStore();
+  const userStore = useUsersStore();
 
-  interface IReactiveData {
-    usernameOrEmail: string;
-    password: string;
-  }
-  const r = reactive<IReactiveData>({
-    usernameOrEmail: "test",
-    password: "test1234",
-  });
-
-  function Submit() {
-    if (!usersStore.loggedUser) {
-      usersStore.loginUser(r.usernameOrEmail, r.password);
-    } else {
-      usersStore.logOut();
-    }
-  }
+  const register = ref(true);
 </script>
 
 <template>
-  <q-page>
-    <div class="row justify-center">
-      <div class="col-12 col-sm-8 col-md-6 col-lg-4 q-gutter-md">
-        <q-form @submit="Submit">
-          <h5 v-if="!usersStore.loggedUser" class="text-center q-mt-sm q-mb-none">
-            {{ $t("login") }}
-          </h5>
-          <h5 v-else class="text-center q-mt-sm q-mb-none">{{ $t("logout") }}</h5>
-          <q-input
-            v-model="r.usernameOrEmail"
-            :disable="usersStore.loggedUser != null"
-            filled
-            :label="$t('unameOrEmail') + ':'"
-            :rules="[(v) => (v != null && v != '') || 'Please fill in!']"
-            type="text"
-          />
-          <q-input
-            v-if="!usersStore.loggedUser"
-            v-model="r.password"
-            filled
-            :label="$t('password') + ':'"
-            :rules="[(v) => (v != null && v != '') || 'Please fill in!']"
-            type="text"
-          />
-          <div class="row justify-center">
-            <q-btn
-              class="q-mr-md"
-              color="green"
-              :label="usersStore.loggedUser ? $t('logout') : $t('login')"
-              no-caps
-              type="submit"
-            />
-          </div>
-        </q-form>
-      </div>
+  <q-page class="row justify-center items-center">
+    <div v-if="!userStore.loggedUser">
+      <LoginForm v-if="register" @to-reg="register = !register" />
+      <RegisterForm v-else @to-login="register = !register" />
+    </div>
+    <div v-else>
+      <q-form
+        ref="myform"
+        class="square-card row justify-center"
+        @submit.prevent="userStore.logOut()"
+      >
+        <q-card
+          bordered
+          class="q-pa-sm shadow-10"
+          square
+          style="min-height: 60%"
+          :style="$q.dark.isActive ? '' : 'background: #eee'"
+        >
+          <q-card-section>
+            <p class="q-pa-md text-h6 text-left">{{ $t("logout") }}</p>
+          </q-card-section>
+          <q-separator color="secondary" inset />
+          <q-card-section>
+            <div class="q-pa-md q-gutter-y-md">
+              <q-btn class="full-width" color="secondary" :label="$t('logout')" type="submit" />
+            </div>
+          </q-card-section>
+        </q-card>
+      </q-form>
     </div>
   </q-page>
 </template>

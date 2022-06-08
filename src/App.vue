@@ -2,6 +2,7 @@
   import { useI18n } from "vue-i18n";
   import { Quasar } from "quasar";
   import router from "src/router";
+  import { useMeta } from "vue-meta";
   import { useUsersStore } from "./store/usersStore";
 
   const leftDrawer = ref(false);
@@ -12,6 +13,11 @@
     inheritLocale: true,
     useScope: "global",
   });
+
+  const computedTitle = computed(() => ({
+    title: t("gridTitle"),
+  }));
+  useMeta(computedTitle);
 
   const menuItems = ref([
     {
@@ -102,9 +108,18 @@
 </script>
 
 <template>
+  <metainfo>
+    <template #title="{ content }">
+      {{ content }}
+    </template>
+  </metainfo>
   <div class="q-pa-md">
     <q-layout view="hHh Lpr fFf">
-      <q-header class="bg-secondary text-white text-left" elevated>
+      <q-header
+        class="bg-secondary text-left"
+        :class="$q.dark.isActive ? 'text-white' : 'text-black'"
+        elevated
+      >
         <q-toolbar>
           <q-btn dense flat icon="mdi-menu" round @click="leftDrawer = !leftDrawer" />
           <q-toolbar-title id="title" style="cursor: pointer" @click="router.push({ path: '/' })">
@@ -146,7 +161,7 @@
           </q-list>
           <q-list>
             <template v-for="(linkItem, index) in links" :key="index">
-              <q-item clickable :href="linkItem.link">
+              <q-item clickable :href="linkItem.link" target="_blank">
                 <q-item-section avatar>
                   <q-icon :name="linkItem.icon" />
                 </q-item-section>
