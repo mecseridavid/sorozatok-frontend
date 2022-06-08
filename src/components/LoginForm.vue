@@ -12,16 +12,16 @@
     visibility: QInputProps["type"];
   }
 
-  const r = reactive<IReactiveData>({
-    usernameOrEmail: "",
-    password: "",
-    visibility: "password",
-  });
   // const r = reactive<IReactiveData>({
-  //   usernameOrEmail: "test",
-  //   password: "test1234",
+  //   usernameOrEmail: "",
+  //   password: "",
   //   visibility: "password",
   // });
+  const r = reactive<IReactiveData>({
+    usernameOrEmail: "test",
+    password: "test1234",
+    visibility: "password",
+  });
   defineEmits<{
     // eslint-disable-next-line no-unused-vars
     (event: "toReg"): void;
